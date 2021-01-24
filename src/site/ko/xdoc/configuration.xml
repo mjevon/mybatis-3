@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-       Copyright 2009-2019 the original author or authors.
+       Copyright 2009-2020 the original author or authors.
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -309,6 +309,20 @@ SqlSessionFactory factory = new SqlSessionFactoryBuilder().build(reader, environ
             </tr>
             <tr>
               <td>
+                defaultResultSetType
+              </td>
+              <td>
+                Specifies a scroll strategy when omit it per statement settings. (Since: 3.5.2)
+              </td>
+              <td>
+                FORWARD_ONLY | SCROLL_SENSITIVE | SCROLL_INSENSITIVE | DEFAULT(same behavior with 'Not Set')
+              </td>
+              <td>
+                Not Set (null)
+              </td>
+            </tr>
+            <tr>
+              <td>
                 safeRowBoundsEnabled
               </td>
               <td>
@@ -533,6 +547,35 @@ SqlSessionFactory factory = new SqlSessionFactoryBuilder().build(reader, environ
                 <code>Configuration</code> 인스턴스를 제공하는 클래스를 지정한다.
                 반환된 Configuration 인스턴스는 역직렬화 된 객체의 지연로딩 속성들을 불러오는데 사용된다.
                 이 클래스는 <code>static Configuration getConfiguration()</code> 메서드를 가져야 한다. (3.2.3 부터)
+              </td>
+              <td>
+                타입별칭이나 패키지 경로를 포함한 클래스명
+              </td>
+              <td>
+                설정하지 않음
+              </td>
+            </tr>
+            <tr>
+              <td>
+                shrinkWhitespacesInSql
+              </td>
+              <td>
+                SQL에서 여분의 whitespace 문자들을 삭제한다. 이는 SQL의 리터럴 문자열에도 영향을 미친다. (Since 3.5.5)
+              </td>
+              <td>
+                true | false
+              </td>
+              <td>
+                false
+              </td>
+            </tr>
+            <tr>
+              <td>
+                defaultSqlProviderType
+              </td>
+              <td>
+                Provider method를 가지고 있는 sql provider class를 지정한다. (3.5.6 부터).
+                이 클래스는 sql provider annotation(예: <code>@SelectProvider</code>)의 <code>type</code> (혹은 <code>value</code>)속성이 누락되었을때 기본으로 적용된다.
               </td>
               <td>
                 타입별칭이나 패키지 경로를 포함한 클래스명
@@ -1474,13 +1517,15 @@ public class ExampleObjectFactory extends DefaultObjectFactory {
   method = "update",
   args = {MappedStatement.class,Object.class})})
 public class ExamplePlugin implements Interceptor {
+  private Properties properties = new Properties();
   public Object intercept(Invocation invocation) throws Throwable {
-    return invocation.proceed();
-  }
-  public Object plugin(Object target) {
-    return Plugin.wrap(target, this);
+    // implement pre processing if need
+    Object returnObject = invocation.proceed();
+    // implement post processing if need
+    return returnObject;
   }
   public void setProperties(Properties properties) {
+    this.properties = properties;
   }
 }]]></source>
 
@@ -1573,7 +1618,9 @@ SqlSessionFactory factory = new SqlSessionFactoryBuilder().build(reader,properti
 		어쨌든 둘다 타입 별칭이 있다.
 		즉 TransactionFactory를 위한 클래스 명이나 타입 별칭 중 하나를 사용할 수 있다.</p>
         <source><![CDATA[public interface TransactionFactory {
-  void setProperties(Properties props);
+  default void setProperties(Properties props) { // Since 3.5.2, change to default method
+    // NOP
+  }
   Transaction newTransaction(Connection conn);
   Transaction newTransaction(DataSource dataSource, TransactionIsolationLevel level, boolean autoCommit);
 }]]></source>
@@ -1726,7 +1773,9 @@ public class C3P0DataSourceFactory extends UnpooledDataSourceFactory {
     </p>
 
         <source><![CDATA[public interface DatabaseIdProvider {
-  void setProperties(Properties p);
+  default void setProperties(Properties p) { // Since 3.5.2, change to default method
+    // NOP
+  }
   String getDatabaseId(DataSource dataSource) throws SQLException;
 }]]></source>
 
